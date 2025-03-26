@@ -1,6 +1,7 @@
 pipeline {
     agent any
     environment {
+        AWS_REGION = "ap-northeast-1"
         ZIP_FILE = 'dotnet-mvc-app.zip'
     }
     stages {
@@ -26,12 +27,12 @@ pipeline {
                     def authBuild = build job: 'Common/aws-codeartifact-auth-pipeline', wait: true
                     def token = authBuild.description.tokenize('=')[1]  // Extract token
 
-                    echo "Using AWS CodeArtifact token securely."
+                    echo "Using AWS CodeArtifact token securely.."
 
                     // Store token in memory for later use
                     env.CODEARTIFACT_AUTH_TOKEN = token
 
-                    echo "Show NUGET list source."
+                    echo "Check NUGET list source.."
 
                     sh """
                         dotnet nuget list source
@@ -45,11 +46,11 @@ pipeline {
             steps {
                 script {
                     withAWS(region: "${AWS_REGION}") {  // Ensures all AWS CLI commands use correct credentials
-                    sh """
-                        cd WebApp
-                        dotnet publish -c Release -o ../publish -v d
-                        ls -la
-                    """
+                        sh """
+                            cd WebApp
+                            dotnet publish -c Release -o ../publish -v d
+                            ls -la
+                        """
                     }
                 }
             }
@@ -58,13 +59,17 @@ pipeline {
         stage('Package Application') {
             // Package the application into a zip file for deployment
             steps {
-                sh """
-                    ls -la
-                    cd publish
-                    zip -r ../${ZIP_FILE} .
-                    cd ..  # Navigate back to the parent directory
-                    ls -la
-                """
+                script {
+                    withAWS(region: "${AWS_REGION}") {  // Ensures all AWS CLI commands use correct credentials
+                        sh """
+                            ls -la
+                            cd publish
+                            zip -r ../${ZIP_FILE} .
+                            cd ..  # Navigate back to the parent directory
+                            ls -la
+                        """
+                    }
+                }
             }
         }
     }
