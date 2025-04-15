@@ -1,3 +1,5 @@
+using F3.Core.Application.Common.Interfaces;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services required by MapControllerRoute method to work
